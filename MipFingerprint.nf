@@ -79,6 +79,6 @@ process MipsTrimDedup {
     rg_id = "${sample_id}_MergedTrimmedDedup"
 
     """
-    python ${params.trim_dedup_path} -d ${params.design_file}  -l ${params.uuid_length} -ur ${params.uuid_read} -r1 ${r1_args} -r2 ${r2_args}
+    python ${params.mips_trim_dedup_path} -d ${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
     """
 }
