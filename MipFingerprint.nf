@@ -23,7 +23,7 @@ workflow {
 
     MipsTrimDedup(samples)
     BWA_MEM(
-        MipsTrimDedup.out.map{sample_id, rg_id, r1_fastq, r2_fastq -> [sample_id, rg_id, [r1_fastq, r2_fastq2]]}
+        MipsTrimDedup.out.map{sample_id, rg_id, r1_fastq, r2_fastq -> [sample_id, rg_id, [r1_fastq, r2_fastq]]}
     )
     Sambamba_ViewSort(BWA_MEM.out)
 
