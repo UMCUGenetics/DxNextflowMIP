@@ -25,11 +25,15 @@ workflow {
     BWA_MEM(MipsTrimDedup.out)
     Sambamba_ViewSort(BWA_MEM.out)
 
-    GATK_UnifiedGenotyper(Sambamba_ViewSort.out)
+    GATK_UnifiedGenotyper(
+        Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple()
+    )
 
     // QC
     FastQC(fastq_files)
-    Sambamba_Flagstat(Sambamba_ViewSort.out)
+    Sambamba_Flagstat(
+        Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple()
+    )
     Channel.empty().mix(
             FastQC.out.flatten().map{file -> [analysis_id, file]},
             Sambamba_Flagstat.out.flatten().map{file -> [analysis_id, file]},
