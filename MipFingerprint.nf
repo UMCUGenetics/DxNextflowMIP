@@ -22,7 +22,9 @@ def analysis_id = params.outdir.split('/')[-1]
 workflow {
 
     MipsTrimDedup(samples)
-    BWA_MEM(MipsTrimDedup.out)
+    BWA_MEM(
+        MipsTrimDedup.out.map{sample_id, rg_id, r1_fastq, r2_fastq -> [sample_id, rg_id, [r1_fastq, r2_fastq2]]}
+    )
     Sambamba_ViewSort(BWA_MEM.out)
 
     GATK_UnifiedGenotyper(
