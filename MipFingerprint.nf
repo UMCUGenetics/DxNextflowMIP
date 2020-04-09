@@ -2,30 +2,60 @@
 nextflow.preview.dsl=2
 
 include extractFastqPairFromDir from './NextflowModules/Utils/fastq.nf'
-include FastQC from './NextflowModules/FastQC/0.11.8/FastQC.nf' params(optional:'')
+
+// Mapping modules
 include MEM as BWA_MEM from './NextflowModules/BWA/0.7.17/MEM.nf' params(genome:"$params.genome", optional: '-c 100 -M')
 include ViewSort as Sambamba_ViewSort from './NextflowModules/Sambamba/0.7.0/ViewSort.nf'
-include Flagstat as Sambamba_Flagstat from './NextflowModules/Sambamba/0.7.0/Flagstat.nf'
-include UnifiedGenotyper as GATK_UnifiedGenotyper from './NextflowModules/GATK/3.8-1-0-gf15c1c3ef/UnifiedGenotyper.nf' params(gatk_path: "$params.gatk_path", genome:"$params.genome", optional: "--intervals $params.fingerprint_target --output_mode EMIT_ALL_SITES")
-include MultiQC from './NextflowModules/MultiQC/1.8/MultiQC.nf' params(optional:'')
 
-fastq_files = extractFastqPairFromDir(params.fastq_path)
-samples = fastq_files.map( {it.flatten()}).groupTuple(by:[0])
+// Fingerprint modules
+include UnifiedGenotyper as GATK_UnifiedGenotyper from './NextflowModules/GATK/3.8-1-0-gf15c1c3ef/UnifiedGenotyper.nf' params(gatk_path: "$params.gatk_path", genome:"$params.genome", optional: "--intervals $params.fingerprint_target --output_mode EMIT_ALL_SITES")
+
+// QC Modules
+include FastQC from './NextflowModules/FastQC/0.11.8/FastQC.nf' params(optional:'')
+include Flagstat as Sambamba_Flagstat from './NextflowModules/Sambamba/0.7.0/Flagstat.nf'
+include MultiQC from './NextflowModules/MultiQC/1.8/MultiQC.nf' params(optional:"--config $baseDir/assets/multiqc_config.yaml")
+
+def fastq_files = extractFastqPairFromDir(params.fastq_path)
+def samples = fastq_files.map({it.flatten()}).groupTuple(by:[0])
+def analysis_id = params.outdir.split('/')[-1]
 
 workflow {
-    FastQC(fastq_files)
+
     MipsTrimDedup(samples)
     BWA_MEM(MipsTrimDedup.out)
     Sambamba_ViewSort(BWA_MEM.out)
-    Sambamba_Flagstat(Sambamba_ViewSort.out)
+
     GATK_UnifiedGenotyper(Sambamba_ViewSort.out)
 
-    // Multi QC files
-    multi_qc_files = Channel.empty().mix(FastQC.out, Sambamba_Flagstat.out).collect()
-    MultiQC(multi_qc_files)
+    // QC
+    FastQC(fastq_files)
+    Sambamba_Flagstat(Sambamba_ViewSort.out)
+    Channel.empty().mix(
+            FastQC.out.flatten().map{file -> [analysis_id, file]},
+            Sambamba_Flagstat.out.flatten().map{file -> [analysis_id, file]},
+        ).groupTuple()
 
-    // ToDo:
-    // cleanup script -> QC, extra log files?
+}
+
+// Workflow completion notification
+workflow.onComplete {
+    // HTML Template
+    def template = new File("$baseDir/assets/workflow_complete.html")
+    def binding = [
+        runName: analysis_id,
+        workflow: workflow
+    ]
+    def engine = new groovy.text.GStringTemplateEngine()
+    def email_html = engine.createTemplate(template).make(binding).toString()
+
+    // Send email
+    if (workflow.success) {
+        def subject = "MIP Fingerprint Workflow Successful: ${analysis_id}"
+        sendMail(to: params.email, subject: subject, body: email_html, attach: "${params.outdir}/QC/${analysis_id}_multiqc_report.html")
+    } else {
+        def subject = "MIP Fingerprint Workflow Failed: ${analysis_id}"
+        sendMail(to: params.email, subject: subject, body: email_html)
+    }
 }
 
 // Custom processes

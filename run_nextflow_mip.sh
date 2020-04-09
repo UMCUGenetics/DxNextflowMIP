@@ -1,0 +1,31 @@
+#!/bin/bash
+# Set input and output dirs
+input=`realpath $1`
+output=`realpath $2`
+email=$3
+mkdir -p $output && cd $output
+mkdir -p log
+
+workflow_path='/hpc/diaggen/software/development/DxNextflowMIP'
+
+sbatch <<EOT
+#!/bin/bash
+#SBATCH --time=24:00:00
+#SBATCH --nodes=1
+#SBATCH --mem 5G
+#SBATCH --gres=tmpspace:10G
+#SBATCH -o log/slurm_nextflow_mip.%j.out
+#SBATCH -e log/slurm_nextflow_mip.%j.err
+#SBATCH --mail-user $email
+#SBATCH --mail-type FAIL
+
+module load Java/1.8.0_60
+
+/hpc/diaggen/software/tools/nextflow run $workflow_path/MipFingerprint.nf \
+-c $workflow_path/MipFingerprint.config \
+--fastq_path $input \
+--outdir $output \
+--email $email \
+-profile slurm \
+-resume -ansi-log false
+EOT
