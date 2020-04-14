@@ -5,22 +5,11 @@ extra_fn_clean_exts:
 
 top_modules:
 - 'fastqc'
-- 'samtools'
-
-picard_config:
-    general_stats_target_coverage:
-        - 2
-        - 10
-        - 20
-        - 30
-        - 40
-        - 50
-        - 100
 
 table_columns_visible:
     FastQC:
         percent_duplicates: False
-        percent_gc: False
-        avg_sequence_length: False
-        percent_fails: False
-        total_sequences: False
+        percent_gc: True
+        avg_sequence_length: True
+        percent_fails: True
+        total_sequences: True

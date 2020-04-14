@@ -33,13 +33,10 @@ workflow {
 
     // QC
     FastQC(fastq_files)
-    Sambamba_Flagstat(
-        Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple()
-    )
+    Sambamba_Flagstat(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
     MultiQC(
         Channel.empty().mix(
-                FastQC.out.flatten().map{file -> [analysis_id, file]},
-                Sambamba_Flagstat.out.flatten().map{file -> [analysis_id, file]},
+                FastQC.out.flatten().map{file -> [analysis_id, file]}
         ).groupTuple()
     )
 
