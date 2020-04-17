@@ -20,23 +20,24 @@ def samples = fastq_files.map({it.flatten()}).groupTuple(by:[0])
 def analysis_id = params.outdir.split('/')[-1]
 
 workflow {
-
+    // Trim and Dedup MIP fastq files
     MipsTrimDedup(samples)
+
+    //Mapping
     BWA_MEM(
         MipsTrimDedup.out.map{sample_id, rg_id, r1_fastq, r2_fastq -> [sample_id, rg_id, [r1_fastq, r2_fastq]]}
     )
     Sambamba_ViewSort(BWA_MEM.out)
 
-    GATK_UnifiedGenotyper(
-        Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple()
-    )
+    // Fingerprint
+    GATK_UnifiedGenotyper(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
 
     // QC
     FastQC(fastq_files)
     Sambamba_Flagstat(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
     MultiQC(
         Channel.empty().mix(
-                FastQC.out.flatten().map{file -> [analysis_id, file]}
+            FastQC.out.flatten().map{file -> [analysis_id, file]}
         ).groupTuple()
     )
 
