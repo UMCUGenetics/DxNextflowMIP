@@ -8,7 +8,7 @@ include MEM as BWA_MEM from './NextflowModules/BWA/0.7.17/MEM.nf' params(genome:
 include ViewSort as Sambamba_ViewSort from './NextflowModules/Sambamba/0.7.0/ViewSort.nf'
 
 // Fingerprint modules
-include UnifiedGenotyper as GATK_UnifiedGenotyper from './NextflowModules/GATK/3.8-1-0-gf15c1c3ef/UnifiedGenotyper.nf' params(gatk_path: "$params.gatk_path", genome:"$params.genome", optional: "--intervals $params.fingerprint_target --output_mode EMIT_ALL_SITES")
+include UnifiedGenotyper as GATK_UnifiedGenotyper from './NextflowModules/GATK/3.8-1-0-gf15c1c3ef/UnifiedGenotyper.nf' params(gatk_path: "$params.gatk_path", genome:"$params.genome", optional: "--intervals $params.dxtracks_path/$params.fingerprint_target --output_mode EMIT_ALL_SITES")
 
 // QC Modules
 include FastQC from './NextflowModules/FastQC/0.11.8/FastQC.nf' params(optional:'')
@@ -41,6 +41,8 @@ workflow {
         ).groupTuple()
     )
 
+    // Repository versions
+    VersionLog()
 }
 
 // Workflow completion notification
@@ -85,6 +87,29 @@ process MipsTrimDedup {
     rg_id = "${sample_id}_MergedTrimmedDedup"
 
     """
-    python ${params.mips_trim_dedup_path} -d ${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
+    python ${params.mips_trim_dedup_path}/mips_trim_dedup.py -d ${params.dxtracks_path}/${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
+    """
+}
+
+process VersionLog {
+    // Custom process to log repository versions
+    tag {"VersionLog ${analysis_id}"}
+    label 'VersionLog'
+    shell = ['/bin/bash', '-eo', 'pipefail']
+
+    output:
+    file('repository_version.log')
+
+    script:
+    """
+    echo 'DxNextflowMIP' > repository_version.log
+    git --git-dir=${workflow.projectDir}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
+
+    echo 'Dx_tracks' >> repository_version.log
+    git --git-dir=${params.dxtracks_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
+
+    echo 'MipsTrimDedup' >> repository_version.log
+    git --git-dir=${params.mips_trim_dedup_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
+
     """
 }
