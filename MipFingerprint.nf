@@ -91,6 +91,24 @@ process MipsTrimDedup {
     """
 }
 
+process CheckFingerprintVCF {
+    // Custom process to check fingerprint vcf files
+    tag {"CheckFingerprintVCF ${sample_id} - ${rg_id}"}
+    label 'CheckFingerprintVCF'
+    shell = ['/bin/bash', '-euo', 'pipefail']
+
+    input:
+    file(vcf_files: "*")
+
+    output:
+    tuple file('logbook.txt'), file('disapprovedVCFs'), file('*.vcf')
+
+    script:
+    """
+    python ${baseDir}/assets/check_fingerprint_vcf.py ${vcf_files} > logbook.txt
+    """
+}
+
 process VersionLog {
     // Custom process to log repository versions
     tag {"VersionLog ${analysis_id}"}
