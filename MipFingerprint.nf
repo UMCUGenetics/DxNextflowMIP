@@ -102,7 +102,7 @@ process CheckFingerprintVCF {
     file(vcf_files: "*")
 
     output:
-    tuple file('logbook.txt'), file('disapprovedVCFs'), file('*.vcf')
+    tuple file('logbook.txt'), file('disapprovedVCFs'), file('approvedVCFs/*.vcf')
 
     script:
     """
