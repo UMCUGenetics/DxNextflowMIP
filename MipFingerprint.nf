@@ -31,6 +31,7 @@ workflow {
 
     // Fingerprint
     GATK_UnifiedGenotyper(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
+    CheckFingerprintVCF(GATK_UnifiedGenotyper.out.map{sample_id, vcf_file -> [vcf_file]}.collect())
 
     // QC
     FastQC(fastq_files)
@@ -93,7 +94,7 @@ process MipsTrimDedup {
 
 process CheckFingerprintVCF {
     // Custom process to check fingerprint vcf files
-    tag {"CheckFingerprintVCF ${sample_id} - ${rg_id}"}
+    tag {"CheckFingerprintVCF"}
     label 'CheckFingerprintVCF'
     shell = ['/bin/bash', '-euo', 'pipefail']
 
@@ -111,7 +112,7 @@ process CheckFingerprintVCF {
 
 process VersionLog {
     // Custom process to log repository versions
-    tag {"VersionLog ${analysis_id}"}
+    tag {"VersionLog"}
     label 'VersionLog'
     shell = ['/bin/bash', '-eo', 'pipefail']
 

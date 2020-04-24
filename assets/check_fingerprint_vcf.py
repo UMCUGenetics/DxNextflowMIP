@@ -8,8 +8,10 @@ if __name__ == "__main__":
     parser.add_argument('fingerprint_vcf_files', type=argparse.FileType('r'), nargs='*', help='Fingerprint VCF')
     arguments = parser.parse_args()
 
-    badfolder = 'disapprovedVCFs'
-    os.mkdir(badfolder)
+    disapproved_folder = 'disapprovedVCFs'
+    approved_folder = 'approvedVCFs'
+    os.mkdir(disapproved_folder)
+    os.mkdir(approved_folder)
 
     gender = ['M', 'F', 'O']
 
@@ -67,15 +69,18 @@ if __name__ == "__main__":
             print('### {}: report filename issue to lab'.format(vcf_file.name))
         if int(result[1]) > 15:
             print('### {}: >15 SNPs with <15X coverage ({}) --> disapproved'.format(vcf_file.name, result[1]))
-            shutil.move(vcf_file.name, badfolder)
+            shutil.move(vcf_file.name, disapproved_folder)
         elif int(result[6]) > 8:
             print('### {}: >8 heterozygous SNPs with <20% MAF ({}) --> disapproved'.format(vcf_file.name, result[6]))
-            shutil.move(vcf_file.name, badfolder)
+            shutil.move(vcf_file.name, disapproved_folder)
         elif int(result[2]) < 8:
             print('### {}: <8 homozygous ALT SNPs called ({}) --> disapproved'.format(vcf_file.name, result[2]))
-            shutil.move(vcf_file.name, badfolder)
+            shutil.move(vcf_file.name, disapproved_folder)
         elif result[4] == 'F' and int(result[5]) > 100 or result[4] == 'M' and int(result[5]) < 100:
             print('### {}: gender {} with {} reads on chromosome Y, discuss with lab and disapprove if needed'.format(vcf_file.name, result[4], result[5]))
+            shutil.move(vcf_file.name, approved_folder)
+        else:
+            shutil.move(vcf_file.name, approved_folder)
 
     for line in logbook:
         print '\t'.join(line)
