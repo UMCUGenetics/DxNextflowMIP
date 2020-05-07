@@ -16,7 +16,7 @@ include Flagstat as Sambamba_Flagstat from './NextflowModules/Sambamba/0.7.0/Fla
 include MultiQC from './NextflowModules/MultiQC/1.8/MultiQC.nf' params(optional:"--config $baseDir/assets/multiqc_config.yaml")
 
 def fastq_files = extractFastqPairFromDir(params.fastq_path)
-def samples = fastq_files.map({it.flatten()}).groupTuple(by:[0])
+def samples = fastq_files.map({it.flatten()}).groupTuple(by:[0], sort:true)
 def analysis_id = params.outdir.split('/')[-1]
 
 workflow {
