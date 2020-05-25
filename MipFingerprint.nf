@@ -36,8 +36,8 @@ workflow {
     // QC
     FastQC(fastq_files)
     Sambamba_Flagstat(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
-    MultiQC(analysis_id, Channel.empty().mix(FastQC.out))
-
+    MultiQC(analysis_id, Channel.empty().mix(FastQC.out.collect()))
+    
     // Repository versions
     VersionLog()
 }
