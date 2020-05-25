@@ -36,11 +36,7 @@ workflow {
     // QC
     FastQC(fastq_files)
     Sambamba_Flagstat(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
-    MultiQC(
-        Channel.empty().mix(
-            FastQC.out.flatten().map{file -> [analysis_id, file]}
-        ).groupTuple()
-    )
+    MultiQC(analysis_id, Channel.empty().mix(FastQC.out))
 
     // Repository versions
     VersionLog()
@@ -76,20 +72,20 @@ process MipsTrimDedup {
     shell = ['/bin/bash', '-euo', 'pipefail']
 
     input:
-    tuple sample_id, rg_id, file(r1_fastqs: "*"), file(r2_fastqs: "*")
+        tuple(sample_id, rg_id, path(r1_fastqs), path(r2_fastqs))
 
     output:
-    tuple sample_id, rg_id, file('*_LMergedTrimmedDedup_R1_*.fastq.gz'), file('*_LMergedTrimmedDedup_R2_*.fastq.gz')
+        tuple(sample_id, rg_id, path('*_LMergedTrimmedDedup_R1_*.fastq.gz'), path('*_LMergedTrimmedDedup_R2_*.fastq.gz'), emit: fastq_files)
 
     script:
-    def r1_args = r1_fastqs.collect{ "$it" }.join(" ")
-    def r2_args = r2_fastqs.collect{ "$it" }.join(" ")
+        def r1_args = r1_fastqs.collect{ "$it" }.join(" ")
+        def r2_args = r2_fastqs.collect{ "$it" }.join(" ")
 
-    rg_id = "${sample_id}_MergedTrimmedDedup"
+        rg_id = "${sample_id}_MergedTrimmedDedup"
 
-    """
-    python ${params.mips_trim_dedup_path}/mips_trim_dedup.py -d ${params.dxtracks_path}/${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
-    """
+        """
+        python ${params.mips_trim_dedup_path}/mips_trim_dedup.py -d ${params.dxtracks_path}/${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
+        """
 }
 
 process CheckFingerprintVCF {
@@ -99,15 +95,17 @@ process CheckFingerprintVCF {
     shell = ['/bin/bash', '-euo', 'pipefail']
 
     input:
-    file(vcf_files: "*")
+        file(vcf_files: "*")
 
     output:
-    tuple file('logbook.txt'), file('disapprovedVCFs'), file('approvedVCFs/*.vcf')
+        tuple(path('disapprovedVCFs'), path('approvedVCFs/*.vcf'), emit: vcf_files)
+        file('logbook.txt', emit: logbook)
+
 
     script:
-    """
-    python ${baseDir}/assets/check_fingerprint_vcf.py ${vcf_files} > logbook.txt
-    """
+        """
+        python ${baseDir}/assets/check_fingerprint_vcf.py ${vcf_files} > logbook.txt
+        """
 }
 
 process VersionLog {
@@ -117,18 +115,17 @@ process VersionLog {
     shell = ['/bin/bash', '-eo', 'pipefail']
 
     output:
-    file('repository_version.log')
+        file('repository_version.log', emit: log_file)
 
     script:
-    """
-    echo 'DxNextflowMIP' > repository_version.log
-    git --git-dir=${workflow.projectDir}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
+        """
+        echo 'DxNextflowMIP' > repository_version.log
+        git --git-dir=${workflow.projectDir}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
 
-    echo 'Dx_tracks' >> repository_version.log
-    git --git-dir=${params.dxtracks_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
+        echo 'Dx_tracks' >> repository_version.log
+        git --git-dir=${params.dxtracks_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
 
-    echo 'MipsTrimDedup' >> repository_version.log
-    git --git-dir=${params.mips_trim_dedup_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
-
-    """
+        echo 'MipsTrimDedup' >> repository_version.log
+        git --git-dir=${params.mips_trim_dedup_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
+        """
 }
