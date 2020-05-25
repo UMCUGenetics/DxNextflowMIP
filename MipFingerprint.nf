@@ -95,11 +95,11 @@ process CheckFingerprintVCF {
     shell = ['/bin/bash', '-euo', 'pipefail']
 
     input:
-        file(vcf_files: "*")
+        path(vcf_files)
 
     output:
         tuple(path('disapprovedVCFs'), path('approvedVCFs/*.vcf'), emit: vcf_files)
-        file('logbook.txt', emit: logbook)
+        path('logbook.txt', emit: logbook)
 
 
     script:
@@ -115,7 +115,7 @@ process VersionLog {
     shell = ['/bin/bash', '-eo', 'pipefail']
 
     output:
-        file('repository_version.log', emit: log_file)
+        path('repository_version.log', emit: log_file)
 
     script:
         """
