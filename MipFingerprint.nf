@@ -1,7 +1,9 @@
 #!/usr/bin/env nextflow
 nextflow.preview.dsl=2
 
+// Utils modules
 include extractFastqPairFromDir from './NextflowModules/Utils/fastq.nf'
+include ExportParams as Workflow_ExportParams from './NextflowModules/Utils/workflow.nf'
 
 // Mapping modules
 include MEM as BWA_MEM from './NextflowModules/BWA/0.7.17/MEM.nf' params(genome:"$params.genome", optional: '-c 100 -M')
@@ -37,9 +39,10 @@ workflow {
     FastQC(fastq_files)
     Sambamba_Flagstat(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
     MultiQC(analysis_id, Channel.empty().mix(FastQC.out.collect()))
-    
-    // Repository versions
+
+    // Create log files: Repository versions and Workflow params
     VersionLog()
+    Workflow_ExportParams()
 }
 
 // Workflow completion notification
