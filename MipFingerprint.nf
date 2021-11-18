@@ -113,7 +113,7 @@ process CheckFingerprintVCF {
 
 process VersionLog {
     // Custom process to log repository versions
-    tag {"VersionLog"}
+    tag {"VersionLog ${analysis_id}"}
     label 'VersionLog'
     shell = ['/bin/bash', '-eo', 'pipefail']
     cache = false  //Disable cache to force a new version log when restarting the workflow.
