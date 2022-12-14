@@ -87,7 +87,7 @@ process MipsTrimDedup {
         rg_id = "${sample_id}_MergedTrimmedDedup"
 
         """
-        python ${params.mips_trim_dedup_path}/mips_trim_dedup.py -d ${params.dxtracks_path}/${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
+        python2 ${params.mips_trim_dedup_path}/mips_trim_dedup.py -d ${params.dxtracks_path}/${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
         """
 }
 
@@ -107,7 +107,7 @@ process CheckFingerprintVCF {
 
     script:
         """
-        python ${baseDir}/assets/check_fingerprint_vcf.py ${vcf_files} > logbook.txt
+        python2 ${baseDir}/assets/check_fingerprint_vcf.py ${vcf_files} > logbook.txt
         """
 }
 
