@@ -25,8 +25,6 @@ sbatch <<EOT
 #SBATCH --mail-type FAIL
 #SBATCH --export=NONE
 
-module load Java/1.8.0_60
-
 /hpc/diaggen/software/tools/nextflow run $workflow_path/MipFingerprint.nf \
 -c $workflow_path/MipFingerprint.config \
 --fastq_path $input \
