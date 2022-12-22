@@ -1,12 +1,20 @@
 import argparse
 import os
+from pathlib import Path
 import shutil
+
+
+def valid_outputfile(file):
+    path_file = Path(file)
+    if path_file.is_file():
+        print(Warning("Output file already exists. Output will be added."))
+    return open(file, "a")
 
 
 def parse_arguments_and_check():
     parser = argparse.ArgumentParser(description='Check fingerprint vcf files.')
     parser.add_argument(
-        '-o', '--output', type=argparse.FileType('a'), help='Output filename to write results to.', default='logbook.txt'
+        '-o', '--output', type=valid_outputfile, help='Output filename to write results to.', default='logbook.txt'
     )
     parser.add_argument('fingerprint_vcf_files', type=argparse.FileType('r'), nargs='+', help='Fingerprint VCF')
     arguments = parser.parse_args()
