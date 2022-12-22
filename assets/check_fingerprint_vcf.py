@@ -101,7 +101,7 @@ def get_state_and_warning(lowcovcount, disbalancecount, homaltcount, vcf_file_ge
 
 
 def write_result(output_file, lst_values):
-    output_file.write('\t'.join(lst_values))
+    output_file.write('\t'.join(map(str, lst_values)) + '\n')
 
 
 def check_fingerprint_vcf(output_file, fingerprint_vcf_files):
