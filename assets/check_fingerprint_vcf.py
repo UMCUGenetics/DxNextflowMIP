@@ -75,7 +75,6 @@ def get_state_and_warning(lowcovcount, disbalancecount, homaltcount, vcf_file_ge
         'discuss': 'discuss with lab and disapprove if needed',
     }
     state = states['approved']
-
     warning = None
     if lowcovcount > 15:
         state = states['disapproved']
