@@ -104,20 +104,13 @@ def write_result(output_file, lst_values):
     output_file.write('\t'.join(lst_values))
 
 
-def move_vcf_file(vcf_file_name, state):
+def check_fingerprint_vcf(output_file, fingerprint_vcf_files):
+    gender = ['M', 'F', 'O']
+    # Add header to output file
     disapproved_folder = 'disapprovedVCFs'
     approved_folder = 'approvedVCFs'
     os.mkdir(disapproved_folder)
     os.mkdir(approved_folder)
-    if state == 'disapproved':
-        shutil.move(vcf_file_name, disapproved_folder)
-    else:
-        shutil.move(vcf_file_name, approved_folder)
-
-
-def check_fingerprint_vcf(output_file, fingerprint_vcf_files):
-    gender = ['M', 'F', 'O']
-    # Add header to output file
     write_result(
         output_file,
         [
@@ -130,7 +123,11 @@ def check_fingerprint_vcf(output_file, fingerprint_vcf_files):
         state, warning = get_state_and_warning(
             lowcovcount, disbalancecount, homaltcount, vcf_file_gender, ycount, vcf_file_name, gender
         )
-        move_vcf_file(vcf_file_name, state)
+        # Move vcf file
+        if state == 'disapproved':
+            shutil.move(vcf_file_name, disapproved_folder)
+        else:
+            shutil.move(vcf_file_name, approved_folder)
         write_result(
             output_file,
             [vcf_file_name, lowcovcount, homaltcount, contamination, vcf_file_gender, ycount, disbalancecount, state, warning]
