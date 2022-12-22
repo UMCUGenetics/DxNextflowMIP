@@ -69,28 +69,33 @@ def parse_vcf(vcf_file):
 
 
 def get_state_and_warning(lowcovcount, disbalancecount, homaltcount, vcf_file_gender, ycount, vcf_file_name, gender):
-    state = 'approved'
-    discuss_state = 'discuss with lab and disapprove if needed'
+    states = {
+        'approved': 'approved',
+        'disapproved': 'disapproved',
+        'discuss': 'discuss with lab and disapprove if needed',
+    }
+    state = states['approved']
+
     warning = None
     if lowcovcount > 15:
-        state = 'disapproved'
+        state = states['disapproved']
         warning = f'>15 SNPs with <15X coverage ({lowcovcount})'
     elif disbalancecount > 8:
-        state = 'disapproved'
+        state = states['disapproved']
         warning = f'>8 heterozygous SNPs with <20% MAF ({disbalancecount})'
     elif homaltcount < 8:
-        state = 'disapproved'
+        state = states['disapproved']
         warning = f'<8 homozygous ALT SNPs called ({homaltcount})'
     elif (vcf_file_gender == 'F' and ycount > 100) or (vcf_file_gender == 'M' and ycount < 100):
-        state = discuss_state
+        state = states['discuss']
         warning = f'gender {vcf_file_gender} with {ycount} reads on chromosome Y'
     if vcf_file_gender not in gender:
         gender_warning = f'gender used in filename not allowed: {vcf_file_name}'
         if warning:
-            state = ';'.join((state, discuss_state))
+            state = ';'.join((state, states['discuss']))
             warning = ';'.join((warning, gender_warning))
         else:
-            state = discuss_state
+            state = states['discuss']
             warning = gender_warning
     return state, warning
 
