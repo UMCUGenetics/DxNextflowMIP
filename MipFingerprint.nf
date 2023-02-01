@@ -19,6 +19,7 @@ include MultiQC from './NextflowModules/MultiQC/1.8/MultiQC.nf' params(optional:
 
 // CustomModules
 include CheckFingerprintVCF from './CustomModules/CheckFingerprintVCF/CheckFingerprintVCF.nf'
+include CheckQC from './CustomModules/CheckQC/CheckQC.nf'
 include MipsTrimDedup from './CustomModules/MipsTrimDedup/MipsTrimDedup.nf'
 include VersionLog from './CustomModules/Utils/VersionLog.nf'
 
@@ -44,6 +45,12 @@ workflow {
     FastQC(fastq_files)
     Sambamba_Flagstat(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
     MultiQC(analysis_id, Channel.empty().mix(FastQC.out.collect()))
+
+    // QC - Check and collect
+    CheckQC(
+        analysis_id, 
+        CheckFingerprintVCF.out.logbook
+    )
 
     // Create log files: Repository versions and Workflow params
     VersionLog(
