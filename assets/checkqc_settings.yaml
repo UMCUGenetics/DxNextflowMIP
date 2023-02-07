@@ -4,5 +4,5 @@ metrics:
     threshold: "approved"
     operator: "!="
     report_cols: ["state", "warning"]
-    sample_cols: ["filename"]
+    sample_cols: ["sample"]
     title: "FingerprintVCF"
