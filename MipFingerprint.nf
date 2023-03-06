@@ -17,6 +17,12 @@ include FastQC from './NextflowModules/FastQC/0.11.8/FastQC.nf' params(optional:
 include Flagstat as Sambamba_Flagstat from './NextflowModules/Sambamba/0.7.0/Flagstat.nf'
 include MultiQC from './NextflowModules/MultiQC/1.8/MultiQC.nf' params(optional:"--config $baseDir/assets/multiqc_config.yaml")
 
+// CustomModules
+include CheckFingerprintVCF from './CustomModules/CheckFingerprintVCF/CheckFingerprintVCF.nf'
+include CheckQC from './CustomModules/CheckQC/CheckQC.nf'
+include MipsTrimDedup from './CustomModules/MipsTrimDedup/MipsTrimDedup.nf'
+include VersionLog from './CustomModules/Utils/VersionLog.nf'
+
 def fastq_files = extractFastqPairFromDir(params.fastq_path)
 def samples = fastq_files.map({it.flatten()}).groupTuple(by:[0], sort:true)
 def analysis_id = params.outdir.split('/')[-1]
@@ -40,8 +46,20 @@ workflow {
     Sambamba_Flagstat(Sambamba_ViewSort.out.map{sample_id, rg_id, bam_file, bai_file -> [sample_id, bam_file, bai_file]}.groupTuple())
     MultiQC(analysis_id, Channel.empty().mix(FastQC.out.collect()))
 
+    // QC - Collect and check
+    CheckQC(
+        analysis_id, 
+        CheckFingerprintVCF.out.logbook
+    )
+
     // Create log files: Repository versions and Workflow params
-    VersionLog()
+    VersionLog(
+        Channel.of(
+            "${workflow.projectDir}/",
+            "${params.dxtracks_path}/",
+            "${params.mips_trim_dedup_path}/",
+        ).collect()
+    )
     Workflow_ExportParams()
 }
 
@@ -64,72 +82,4 @@ workflow.onComplete {
         def subject = "MIP Fingerprint Workflow Failed: ${analysis_id}"
         sendMail(to: params.email.trim(), subject: subject, body: email_html)
     }
-}
-
-// Custom processes
-process MipsTrimDedup {
-    // Custom process to run MIPS TrimDedup
-    tag {"MIPS TrimDedup ${sample_id} - ${rg_id}"}
-    label 'MIPS_1_0_1'
-    label 'MIPS_1_0_1_TrimDedup'
-    shell = ['/bin/bash', '-euo', 'pipefail']
-
-    input:
-        tuple(sample_id, rg_id, path(r1_fastqs), path(r2_fastqs))
-
-    output:
-        tuple(sample_id, rg_id, path('*_LMergedTrimmedDedup_R1_*.fastq.gz'), path('*_LMergedTrimmedDedup_R2_*.fastq.gz'), emit: fastq_files)
-
-    script:
-        def r1_args = r1_fastqs.collect{ "$it" }.join(" ")
-        def r2_args = r2_fastqs.collect{ "$it" }.join(" ")
-
-        rg_id = "${sample_id}_MergedTrimmedDedup"
-
-        """
-        python ${params.mips_trim_dedup_path}/mips_trim_dedup.py -d ${params.dxtracks_path}/${params.mips_design_file}  -l ${params.mips_uuid_length} -ur ${params.mips_uuid_read} -r1 ${r1_args} -r2 ${r2_args}
-        """
-}
-
-process CheckFingerprintVCF {
-    // Custom process to check fingerprint vcf files
-    tag {"CheckFingerprintVCF"}
-    label 'CheckFingerprintVCF'
-    shell = ['/bin/bash', '-euo', 'pipefail']
-
-    input:
-        path(vcf_files)
-
-    output:
-        tuple(path('disapprovedVCFs'), path('approvedVCFs/*.vcf'), emit: vcf_files)
-        path('logbook.txt', emit: logbook)
-
-
-    script:
-        """
-        python ${baseDir}/assets/check_fingerprint_vcf.py ${vcf_files} > logbook.txt
-        """
-}
-
-process VersionLog {
-    // Custom process to log repository versions
-    tag {"VersionLog ${analysis_id}"}
-    label 'VersionLog'
-    shell = ['/bin/bash', '-eo', 'pipefail']
-    cache = false  //Disable cache to force a new version log when restarting the workflow.
-
-    output:
-        path('repository_version.log', emit: log_file)
-
-    script:
-        """
-        echo 'DxNextflowMIP' > repository_version.log
-        git --git-dir=${workflow.projectDir}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
-
-        echo 'Dx_tracks' >> repository_version.log
-        git --git-dir=${params.dxtracks_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
-
-        echo 'MipsTrimDedup' >> repository_version.log
-        git --git-dir=${params.mips_trim_dedup_path}/.git log --pretty=oneline --decorate -n 2 >> repository_version.log
-        """
 }
