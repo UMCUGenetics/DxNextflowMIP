@@ -1,0 +1,8 @@
+metrics:
+  - filename: "logbook.txt"
+    qc_col: "state"
+    threshold: "approved"
+    operator: "!="
+    report_cols: ["state", "warning"]
+    sample_cols: ["sample"]
+    title: "FingerprintVCF"

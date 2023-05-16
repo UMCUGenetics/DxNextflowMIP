@@ -7,6 +7,7 @@ workflow_path='/hpc/diaggen/software/production/DxNextflowMIP'
 input=`realpath -e $1`
 output=`realpath $2`
 email=$3
+optional_params=( "${@:4}" )
 mkdir -p $output && cd $output
 mkdir -p log
 
@@ -31,7 +32,8 @@ sbatch <<EOT
 --outdir $output \
 --email $email \
 -profile slurm \
--resume -ansi-log false
+-resume -ansi-log false \
+${optional_params[@]:-""}
 
 if [ \$? -eq 0 ]; then
     echo "Nextflow done."
@@ -49,11 +51,18 @@ if [ \$? -eq 0 ]; then
     rm workflow.running
     touch workflow.done
 
+    echo "Change permissions"
+    chmod 775 -R $output
+    
     exit 0
 else
     echo "Nextflow failed"
     rm workflow.running
     touch workflow.failed
+    
+    echo "Change permissions"
+    chmod 775 -R $output
+    
     exit 1
 fi
 EOT
