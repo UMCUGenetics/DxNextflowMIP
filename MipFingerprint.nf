@@ -1,27 +1,25 @@
 #!/usr/bin/env nextflow
-nextflow.preview.dsl=2
-
 // Utils modules
-include extractFastqPairFromDir from './NextflowModules/Utils/fastq.nf'
-include ExportParams as Workflow_ExportParams from './NextflowModules/Utils/workflow.nf'
+include { extractFastqPairFromDir } from './NextflowModules/Utils/fastq.nf'
+include { ExportParams as Workflow_ExportParams } from './NextflowModules/Utils/workflow.nf'
 
 // Mapping modules
-include MEM as BWA_MEM from './NextflowModules/BWA/0.7.17/MEM.nf' params(genome:"$params.genome", optional: '-c 100 -M')
-include ViewSort as Sambamba_ViewSort from './NextflowModules/Sambamba/0.7.0/ViewSort.nf'
+include { MEM as BWA_MEM } from './NextflowModules/BWA/0.7.17/MEM.nf' params(genome:"$params.genome", optional: '-c 100 -M')
+include { ViewSort as Sambamba_ViewSort } from './NextflowModules/Sambamba/0.7.0/ViewSort.nf'
 
 // Fingerprint modules
-include UnifiedGenotyper as GATK_UnifiedGenotyper from './NextflowModules/GATK/3.8-1-0-gf15c1c3ef/UnifiedGenotyper.nf' params(gatk_path: "$params.gatk_path", genome:"$params.genome", optional: "--intervals $params.dxtracks_path/$params.fingerprint_target --output_mode EMIT_ALL_SITES")
+include { UnifiedGenotyper as GATK_UnifiedGenotyper } from './NextflowModules/GATK/3.8-1-0-gf15c1c3ef/UnifiedGenotyper.nf' params(gatk_path: "$params.gatk_path", genome:"$params.genome", optional: "--intervals $params.dxtracks_path/$params.fingerprint_target --output_mode EMIT_ALL_SITES")
 
 // QC Modules
-include FastQC from './NextflowModules/FastQC/0.11.8/FastQC.nf' params(optional:'')
-include Flagstat as Sambamba_Flagstat from './NextflowModules/Sambamba/0.7.0/Flagstat.nf'
-include MultiQC from './NextflowModules/MultiQC/1.8/MultiQC.nf' params(optional:"--config $baseDir/assets/multiqc_config.yaml")
+include { FastQC } from './NextflowModules/FastQC/0.11.8/FastQC.nf' params(optional:'')
+include { Flagstat as Sambamba_Flagstat } from './NextflowModules/Sambamba/0.7.0/Flagstat.nf'
+include { MultiQC } from './NextflowModules/MultiQC/1.8/MultiQC.nf' params(optional:"--config $baseDir/assets/multiqc_config.yaml")
 
 // CustomModules
-include CheckFingerprintVCF from './CustomModules/CheckFingerprintVCF/CheckFingerprintVCF.nf'
-include CheckQC from './CustomModules/CheckQC/CheckQC.nf'
-include MipsTrimDedup from './CustomModules/MipsTrimDedup/MipsTrimDedup.nf'
-include VersionLog from './CustomModules/Utils/VersionLog.nf'
+include { CheckFingerprintVCF } from './CustomModules/CheckFingerprintVCF/CheckFingerprintVCF.nf'
+include { CheckQC } from './CustomModules/CheckQC/CheckQC.nf'
+include { MipsTrimDedup } from './CustomModules/MipsTrimDedup/MipsTrimDedup.nf'
+include { VersionLog } from './CustomModules/Utils/VersionLog.nf'
 
 def fastq_files = extractFastqPairFromDir(params.fastq_path)
 def samples = fastq_files.map({it.flatten()}).groupTuple(by:[0], sort:true)
@@ -48,7 +46,7 @@ workflow {
 
     // QC - Collect and check
     CheckQC(
-        analysis_id, 
+        analysis_id,
         CheckFingerprintVCF.out.logbook
     )
 

@@ -26,6 +26,8 @@ sbatch <<EOT
 #SBATCH --mail-type FAIL
 #SBATCH --export=NONE
 
+export NXF_JAVA_HOME='/hpc/diaggen/software/tools/jdk-20.0.2'
+
 /hpc/diaggen/software/tools/nextflow run $workflow_path/MipFingerprint.nf \
 -c $workflow_path/MipFingerprint.config \
 --fastq_path $input \
